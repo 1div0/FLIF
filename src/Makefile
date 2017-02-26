@@ -1,4 +1,4 @@
-PREFIX := $(DESTDIR)/usr
+PREFIX := $(DESTDIR)/usr/local
 CXXFLAGS := $(shell pkg-config --cflags zlib libpng) -DLODEPNG_NO_COMPILE_PNG -DLODEPNG_NO_COMPILE_DISK
 LDFLAGS := $(shell pkg-config --libs libpng)
 
@@ -131,11 +131,14 @@ flif.dbg0: $(FILES_H) $(FILES_CPP) flif.cpp
 	$(CXX) -std=gnu++11 $(CXXFLAGS) -O0 -ggdb3 -Wall $(FILES_CPP) flif.cpp $(LDFLAGS) -o flif.dbg
 
 flif.asan: $(FILES_H) $(FILES_CPP) flif.cpp
-	$(CXX) -std=gnu++11 $(CXXFLAGS) $(OPTIMIZATIONS) -fsanitize=address,undefined -fno-omit-frame-pointer -g3 -Wall $(FILES_CPP) flif.cpp $(LDFLAGS) -o flif.asan
+	$(CXX) -std=gnu++11 $(CXXFLAGS) $(OPTIMIZATIONS) -DDEBUG -fsanitize=address,undefined -fno-omit-frame-pointer -g3 -Wall $(FILES_CPP) flif.cpp $(LDFLAGS) -o flif.asan
+
+viewflif.asan: libflif$(LIBEXT) viewflif.c
+	$(CC) -std=gnu11 -O0 -ggdb3 -fsanitize=address,undefined $(shell sdl2-config --cflags) -Wall -Ilibrary/ viewflif.c -L. -lflif $(shell sdl2-config --libs) -o viewflif.asan
 
 # make UBSAN print stacktrace
 test.asan: export UBSAN_OPTIONS = print_stacktrace=1
-test.asan: flif.asan test-interface
+test.asan: flif.asan test-interface viewflif.asan
 	mkdir -p ../tmp-test
 	./test-interface ../tmp-test/dummy.flif
 # ASAN may find leaks in code which is not ours and in that case it will throw bad exitcodes on first occurence
